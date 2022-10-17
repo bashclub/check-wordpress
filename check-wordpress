@@ -24,9 +24,9 @@ import json
 VERSION="0.01"
 
 wp_config = {
-    "www.bashclub.org": {
-        "wp_user": "bashclub",
-        "wp_path": "/home/bashclub/htdocs/www.bashclub.org/",
+    "www.zmb.rocks": {
+        "wp_user": "zmb",
+        "wp_path": "/home/zmb/htdocs/www.zmb.rocks/",
         "wp_ignore_inactive_plugins": False,
         "wp_ignore_inactive_themes": False
         }
