@@ -1,6 +1,12 @@
 # check-wordpress
 CheckMK local check plugin for checking uavailable updates wordpress installations vie wp-cli.
 
+Install wp cli (if not already on your system):
+~~~
+wget -O /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+chmod +x /usr/local/bin/wp
+wp --info
+~~~
 
 Install it into /usr/lib/check_mk_agent/local/ your Wordpress Host
 ```
