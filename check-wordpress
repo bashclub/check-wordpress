@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# vim: set fileencoding=utf-8:noet
+##  Copyright 2021 sysops.tv ;-)
+##  BSD-2-Clause
+##
+##  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+##
+##  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+##
+##  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+##
+## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+## THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+## BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+## GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+## LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import os
+import re
+import subprocess
+import json
+
+VERSION="0.01"
+
+wp_config = {
+    "www.bashclub.org": {
+        "wp_user": "bashclub",
+        "wp_path": "/home/bashclub/htdocs/www.bashclub.org/",
+        "wp_ignore_inactive_plugins": False,
+        "wp_ignore_inactive_themes": False
+        }
+    }
+
+#    cmd = f"sudo -u {conf['wp_user']} -i -- /usr/bin/wp --format=json --path={conf['wp_path'}} core check-update"
+
+def check_wordpress(name: str, conf: dict):
+    printout(name, "Core", core_check_update(conf))
+    printout(name, "Plugins", addon_status(conf, 'plugin'))
+    printout(name, "Themes", addon_status(conf, 'theme'))
+
+def core_check_update(conf: dict):
+    wp ("cron event run wp_version_check", conf['wp_user'], conf['wp_path'])
+    rc, result = wp("core check-update", conf['wp_user'], conf['wp_path'])
+    message = result.rstrip('\n')
+    return f"status={rc};1;2;; {message}"
+
+
+def addon_status(conf: dict, type: str):
+    if type == "plugin":
+        cronjob = "wp_update_plugins"
+    else:
+        cronjob = "wp_update_themes"
+    wp (f"cron event run {cronjob}", conf['wp_user'], conf['wp_path'])
+    rc, result = wp(f"{type} list", conf['wp_user'], conf['wp_path'], outformat='json')
+    state = 0
+    addons_to_update = []
+    for addon in json.loads(result):
+        if  addon.get('update') == "available":
+            ignore_param = f"wp_ignore_inactive_{type}s"
+            if conf[ignore_param] == True:
+                if addon.get('status') == 'inactive':
+                    state = 0
+                else:
+                    state = 1
+                    addons_to_update.append(addon.get('name'))
+            else:
+                state = 1
+                addons_to_update.append(f"{addon.get('name')}:{addon.get('status')}")
+    
+    if state > 0:
+        return f"status={state};;1;; Updates available for {','.join(addons_to_update)}"
+    else:
+        return f"status={state};;1;; up-to-date"
+
+def wp(command: str, wp_user: str, wp_path: str, outformat: str = '', return_stderr: bool = False):
+    cmd = f"sudo -u {wp_user} -i -- wp --path={wp_path} {command}"
+    if outformat != "":
+        cmd += f" --format={outformat}"
+    
+    _proc = subprocess.Popen([ cmd ], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    stdout, stderr = _proc.communicate()
+
+    if stderr:
+        if not return_stderr:
+            print (f"{_proc.returncode} {stderr.decode('utf-8')}")
+            os._exit(1)
+    else:
+        return _proc.returncode, stdout.decode('utf-8')
+
+
+def wp_check (name: str, conf: dict):
+
+    try:
+        subprocess.run(["which sudo > /dev/null"], shell=True, check=True)
+    except:
+        print (f'2 "{name}" - Dependecy failed: Please install sudo')
+        os._exit(1)
+    
+    try:
+        subprocess.run(["which wp > /dev/null"], shell=True, check=True)
+    except:
+        print (f'2 "{name}" - Dependecy failed: Please install wp cli')
+        os._exit(1)
+    
+    try:
+        subprocess.run([f"sudo -u {conf['wp_user']} -i -- wp --path={conf['wp_path']} core version > /dev/null"], shell=True, check=True)
+    except:
+        print (f'2 "{name}" - Dependency failed: Please check if wp_path is configured correctly in /etc/checkmk/wordpress.conf')
+        os._exit(1)
+
+    return True
+
+def printout(name:str,function:str, result:str):
+    print(f'P "Wordpress {name} {function}" {result}')
+
+if __name__ == "__main__":
+    _config_file = "/etc/check_mk/wordpress.conf"
+    if not os.path.exists(_config_file):
+        if not os.path.isdir("/etc/check_mk"):
+            os.mkdir("/etc/check_mk")
+        with open(_config_file,"wt") as _f: ## default config erstellen
+            _f.write(json.dumps(wp_config, indent=4, sort_keys=True))
+        print(f"1 Wordpress - default config written - please edit config {_config_file}")
+        os._exit(0)
+    
+    try:
+        with open(_config_file,"rt") as file:
+            wp_config = json.loads(file.read())
+    except:
+        print(f"1 Wordpress - invalid json format - please edit config {_config_file}")
+        os._exit(0)
+    
+    for server in wp_config.keys():
+        if wp_check(server, wp_config[server]):
+            check_wordpress(server, wp_config[server])
