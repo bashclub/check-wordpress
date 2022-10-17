@@ -20,8 +20,8 @@ After running once, the script will create the config file `/etc/check_mk/wordpr
         "wp_path": "/home/zmb/htdocs/www.zmb.rocks/",
         "wp_ignore_inactive_plugins": false,
         "wp_ignore_inactive_themes": false
-        }
     }
+}
 
 ```
 
