@@ -32,8 +32,6 @@ wp_config = {
         }
     }
 
-#    cmd = f"sudo -u {conf['wp_user']} -i -- /usr/bin/wp --format=json --path={conf['wp_path'}} core check-update"
-
 def check_wordpress(name: str, conf: dict):
     printout(name, "Core", core_check_update(conf))
     printout(name, "Plugins", addon_status(conf, 'plugin'))
@@ -73,7 +71,7 @@ def addon_status(conf: dict, type: str):
         return f"status={state};1;2;; up-to-date"
 
 def wp(command: str, wp_user: str, wp_path: str, outformat: str = '', return_stderr: bool = False):
-    cmd = f"sudo -u {wp_user} -i -- wp --path={wp_path} {command}"
+    cmd = f"sudo -u {wp_user} wp --path={wp_path} {command}"
     if outformat != "":
         cmd += f" --format={outformat}"
     
@@ -90,7 +88,7 @@ def wp(command: str, wp_user: str, wp_path: str, outformat: str = '', return_std
 
 def wp_check(name: str, conf: dict):
     try:
-        subprocess.run([f"sudo -u {conf['wp_user']} -i -- wp --path={conf['wp_path']} core version > /dev/null"], shell=True, check=True)
+        subprocess.run([f"sudo -u {conf['wp_user']} wp --path={conf['wp_path']} core version > /dev/null"], shell=True, check=True)
     except:
         print (f'2 "{name}" - Dependency failed: Please check if wp_path is configured correctly in /etc/checkmk/wordpress.conf')
         os._exit(1)
