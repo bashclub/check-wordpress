@@ -57,15 +57,13 @@ def addon_status(conf: dict, type: str):
         if  addon.get('update') == "available":
             ignore_param = f"wp_ignore_inactive_{type}s"
             if conf[ignore_param] == True:
-                if addon.get('status') == 'inactive':
-                    state = 0
-                else:
+                if addon.get('status') == 'active':
                     state = 2
                     addons_to_update.append(addon.get('name'))
             else:
-                if addon.get('status') == 'inactive':
+                if addon.get('status') == 'inactive' and state == 0:
                     state = 1
-                else:
+                elif addon.get('status') == 'active':
                     state = 2                    
                 addons_to_update.append(f"{addon.get('name')}:{addon.get('status')}")
     
