@@ -40,7 +40,7 @@ def check_wordpress(name: str, conf: dict):
     printout(name, "Themes", addon_status(conf, 'theme'))
 
 def core_check_update(conf: dict):
-    wp ("cron event run wp_version_check", conf['wp_user'], conf['wp_path'])
+    #wp ("cron event run wp_version_check", conf['wp_user'], conf['wp_path'])
     rc, result = wp("core check-update", conf['wp_user'], conf['wp_path'])
     message = result.rstrip('\n')
     return f"status={rc};1;2;; {message}"
@@ -51,7 +51,7 @@ def addon_status(conf: dict, type: str):
         cronjob = "wp_update_plugins"
     else:
         cronjob = "wp_update_themes"
-    wp (f"cron event run {cronjob}", conf['wp_user'], conf['wp_path'])
+    #wp (f"cron event run {cronjob}", conf['wp_user'], conf['wp_path'])
     rc, result = wp(f"{type} list", conf['wp_user'], conf['wp_path'], outformat='json')
     state = 0
     addons_to_update = []
