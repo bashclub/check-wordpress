@@ -40,7 +40,6 @@ def check_wordpress(name: str, conf: dict):
     printout(name, "Themes", addon_status(conf, 'theme'))
 
 def core_check_update(conf: dict):
-    #wp ("cron event run wp_version_check", conf['wp_user'], conf['wp_path'])
     rc, result = wp("core check-update", conf['wp_user'], conf['wp_path'])
     message = result.rstrip('\n')
     return f"status={rc};1;2;; {message}"
@@ -51,7 +50,6 @@ def addon_status(conf: dict, type: str):
         cronjob = "wp_update_plugins"
     else:
         cronjob = "wp_update_themes"
-    #wp (f"cron event run {cronjob}", conf['wp_user'], conf['wp_path'])
     rc, result = wp(f"{type} list", conf['wp_user'], conf['wp_path'], outformat='json')
     state = 0
     addons_to_update = []
@@ -89,21 +87,7 @@ def wp(command: str, wp_user: str, wp_path: str, outformat: str = '', return_std
     else:
         return _proc.returncode, stdout.decode('utf-8')
 
-
-def wp_check (name: str, conf: dict):
-
-    try:
-        subprocess.run(["which sudo > /dev/null"], shell=True, check=True)
-    except:
-        print (f'2 "{name}" - Dependecy failed: Please install sudo')
-        os._exit(1)
-    
-    try:
-        subprocess.run(["which wp > /dev/null"], shell=True, check=True)
-    except:
-        print (f'2 "{name}" - Dependecy failed: Please install wp cli')
-        os._exit(1)
-    
+def wp_check(name: str, conf: dict):
     try:
         subprocess.run([f"sudo -u {conf['wp_user']} -i -- wp --path={conf['wp_path']} core version > /dev/null"], shell=True, check=True)
     except:
@@ -122,16 +106,27 @@ if __name__ == "__main__":
             os.mkdir("/etc/check_mk")
         with open(_config_file,"wt") as _f: ## default config erstellen
             _f.write(json.dumps(wp_config, indent=4, sort_keys=True))
-        print(f"1 Wordpress - default config written - please edit config {_config_file}")
+        print(f'1 "Wordpress" - default config written - please edit config {_config_file}')
         os._exit(0)
     
     try:
         with open(_config_file,"rt") as file:
             wp_config = json.loads(file.read())
     except:
-        print(f"1 Wordpress - invalid json format - please edit config {_config_file}")
+        print(f'1 "Wordpress" - invalid json format - please edit config {_config_file}')
         os._exit(0)
+    try:
+        subprocess.run(["which sudo > /dev/null"], shell=True, check=True)
+    except:
+        print (f'2 "Wordpress" - Dependecy failed: Please install sudo')
+        os._exit(1)
     
+    try:
+        subprocess.run(["which wp > /dev/null"], shell=True, check=True)
+    except:
+        print (f'2 "Wordpress" - Dependecy failed: Please install wp cli')
+        os._exit(1)
+        
     for server in wp_config.keys():
         if wp_check(server, wp_config[server]):
             check_wordpress(server, wp_config[server])
