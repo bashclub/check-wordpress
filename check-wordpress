@@ -60,16 +60,19 @@ def addon_status(conf: dict, type: str):
                 if addon.get('status') == 'inactive':
                     state = 0
                 else:
-                    state = 1
+                    state = 2
                     addons_to_update.append(addon.get('name'))
             else:
-                state = 1
+                if addon.get('status') == 'inactive':
+                    state = 1
+                else:
+                    state = 2                    
                 addons_to_update.append(f"{addon.get('name')}:{addon.get('status')}")
     
     if state > 0:
-        return f"status={state};;1;; Updates available for {','.join(addons_to_update)}"
+        return f"status={state};1;2;; Updates available for {','.join(addons_to_update)}"
     else:
-        return f"status={state};;1;; up-to-date"
+        return f"status={state};1;2;; up-to-date"
 
 def wp(command: str, wp_user: str, wp_path: str, outformat: str = '', return_stderr: bool = False):
     cmd = f"sudo -u {wp_user} -i -- wp --path={wp_path} {command}"
