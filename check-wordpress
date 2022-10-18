@@ -21,7 +21,7 @@ import re
 import subprocess
 import json
 
-VERSION="0.01"
+VERSION="0.02"
 
 wp_config = {
     "www.zmb.rocks": {
@@ -38,9 +38,15 @@ def check_wordpress(name: str, conf: dict):
     printout(name, "Themes", addon_status(conf, 'theme'))
 
 def core_check_update(conf: dict):
-    rc, result = wp("core check-update", conf['wp_user'], conf['wp_path'])
-    message = result.rstrip('\n')
-    return f"status={rc};1;2;; {message}"
+    rc, result = wp("core check-update", conf['wp_user'], conf['wp_path'], outformat='json')
+    if result == "":
+        status: int=0
+        message: str="up-to-date"
+    else:
+        result_json=json.loads(result)
+        status: int=1
+        message: str=f"{result_json[0]['update_type']} update version {result_json[0]['version']} available"
+    return f"status={status};;1;; {message}"
 
 
 def addon_status(conf: dict, type: str):
