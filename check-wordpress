@@ -21,7 +21,7 @@ import re
 import subprocess
 import json
 
-VERSION="0.02"
+VERSION="0.03"
 
 wp_config = {
     "www.zmb.rocks": {
@@ -96,7 +96,7 @@ def wp_check(name: str, conf: dict):
     try:
         subprocess.run([f"sudo -u {conf['wp_user']} wp --path={conf['wp_path']} core version > /dev/null"], shell=True, check=True)
     except:
-        print (f'2 "{name}" - Dependency failed: Please check if wp_path is configured correctly in /etc/checkmk/wordpress.conf')
+        print (f'2 "{name}" - Dependency failed: Please check if wp_path is configured correctly in /etc/check_mk/wordpress.conf')
         os._exit(1)
 
     return True
